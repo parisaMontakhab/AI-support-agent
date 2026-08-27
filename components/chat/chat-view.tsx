@@ -18,8 +18,10 @@ const WELCOME_MESSAGE: ChatMessageItem = {
 export function ChatView() {
   const [messages, setMessages] = useState<ChatMessageItem[]>([WELCOME_MESSAGE]);
   const [isPending, setIsPending] = useState(false);
+  const [interactionId, setInteractionId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const isPendingRef = useRef(false);
+  const interactionIdRef = useRef<string | null>(null);
 
   async function addMessage(content: string) {
     if (isPendingRef.current) return;
@@ -41,7 +43,12 @@ export function ChatView() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: content }),
+        body: JSON.stringify({
+          message: content,
+          ...(interactionIdRef.current
+            ? { previousInteractionId: interactionIdRef.current }
+            : {}),
+        }),
       });
 
       const data: unknown = await response.json();
@@ -53,6 +60,20 @@ export function ChatView() {
         data.reply.trim()
           ? data.reply
           : "Sorry, I could not generate a reply.";
+
+      const nextInteractionId =
+        typeof data === "object" &&
+        data !== null &&
+        "interactionId" in data &&
+        typeof data.interactionId === "string" &&
+        data.interactionId.trim()
+          ? data.interactionId
+          : null;
+
+      if (nextInteractionId) {
+        interactionIdRef.current = nextInteractionId;
+        setInteractionId(nextInteractionId);
+      }
 
       setMessages((current) => [
         ...current,

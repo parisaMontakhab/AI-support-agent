@@ -18,6 +18,14 @@ export async function POST(request: Request) {
       ? body.message.trim()
       : "";
 
+  const previousInteractionId =
+    typeof body === "object" &&
+    body !== null &&
+    "previousInteractionId" in body &&
+    typeof body.previousInteractionId === "string"
+      ? body.previousInteractionId.trim()
+      : "";
+
   if (!message) {
     return Response.json({ error: "Message is required." }, { status: 400 });
   }
@@ -28,9 +36,15 @@ export async function POST(request: Request) {
       model: GEMINI_MODEL,
       input: message,
       system_instruction: CUSTOMER_SUPPORT_SYSTEM_PROMPT,
+      ...(previousInteractionId
+        ? { previous_interaction_id: previousInteractionId }
+        : {}),
     });
 
-    return Response.json({ reply: interaction.output_text ?? "" });
+    return Response.json({
+      reply: interaction.output_text ?? "",
+      interactionId: interaction.id,
+    });
   } catch (error) {
     const detail =
       error instanceof Error ? error.message : "Failed to generate a reply.";
