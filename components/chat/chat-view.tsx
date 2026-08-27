@@ -18,7 +18,7 @@ export function ChatView() {
   const [messages, setMessages] = useState<ChatMessageItem[]>([WELCOME_MESSAGE]);
   const listRef = useRef<HTMLDivElement>(null);
 
-  function addMessage(content: string) {
+  async function addMessage(content: string) {
     setMessages((current) => [
       ...current,
       {
@@ -27,6 +27,44 @@ export function ChatView() {
         content,
       },
     ]);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: content }),
+      });
+
+      const data: unknown = await response.json();
+      const reply =
+        typeof data === "object" &&
+        data !== null &&
+        "reply" in data &&
+        typeof data.reply === "string" &&
+        data.reply.trim()
+          ? data.reply
+          : "Sorry, I could not generate a reply.";
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: reply,
+        },
+      ]);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Sorry, I could not generate a reply.",
+        },
+      ]);
+    }
   }
 
   useEffect(() => {
