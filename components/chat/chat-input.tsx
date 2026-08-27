@@ -4,13 +4,15 @@ import { useState, type FormEvent } from "react";
 
 type ChatInputProps = {
   onSend: (message: string) => void;
+  disabled?: boolean;
 };
 
-export function ChatInput({ onSend }: ChatInputProps) {
+export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
   const [value, setValue] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (disabled) return;
     const nextMessage = value.trim();
     if (!nextMessage) return;
     onSend(nextMessage);
@@ -32,12 +34,14 @@ export function ChatInput({ onSend }: ChatInputProps) {
           onChange={(event) => setValue(event.target.value)}
           placeholder="Type a message..."
           autoComplete="off"
-          className="min-w-0 flex-1 rounded-full border border-[#E8E2F0] bg-[#F7F4FA] px-4 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-primary"
+          disabled={disabled}
+          className="min-w-0 flex-1 rounded-full border border-[#E8E2F0] bg-[#F7F4FA] px-4 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
         />
         <button
           type="submit"
           aria-label="Send message"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white hover:bg-primary-hover"
+          disabled={disabled}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-primary"
         >
           <svg
             viewBox="0 0 20 20"

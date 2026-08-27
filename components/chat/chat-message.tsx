@@ -28,3 +28,17 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
     </div>
   );
 }
+
+export function ChatMessageSkeleton() {
+  return (
+    <div className="flex w-full justify-start" role="status" aria-live="polite">
+      <span className="sr-only">Assistant is typing</span>
+      <div className="w-[min(70%,16rem)] rounded-2xl rounded-bl-md border border-line bg-white px-3.5 py-3">
+        <div className="flex flex-col gap-2">
+          <div className="h-2.5 w-[88%] animate-pulse rounded-full bg-lavender" />
+          <div className="h-2.5 w-[62%] animate-pulse rounded-full bg-lavender" />
+        </div>
+      </div>
+    </div>
+  );
+}

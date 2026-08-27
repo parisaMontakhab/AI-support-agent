@@ -5,6 +5,7 @@ import { ChatHeader } from "@/components/chat/chat-header";
 import { ChatInput } from "@/components/chat/chat-input";
 import {
   ChatMessage,
+  ChatMessageSkeleton,
   type ChatMessageItem,
 } from "@/components/chat/chat-message";
 
@@ -16,9 +17,15 @@ const WELCOME_MESSAGE: ChatMessageItem = {
 
 export function ChatView() {
   const [messages, setMessages] = useState<ChatMessageItem[]>([WELCOME_MESSAGE]);
+  const [isPending, setIsPending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const isPendingRef = useRef(false);
 
   async function addMessage(content: string) {
+    if (isPendingRef.current) return;
+
+    isPendingRef.current = true;
+    setIsPending(true);
     setMessages((current) => [
       ...current,
       {
@@ -64,6 +71,9 @@ export function ChatView() {
           content: "Sorry, I could not generate a reply.",
         },
       ]);
+    } finally {
+      isPendingRef.current = false;
+      setIsPending(false);
     }
   }
 
@@ -71,7 +81,7 @@ export function ChatView() {
     const list = listRef.current;
     if (!list) return;
     list.scrollTop = list.scrollHeight;
-  }, [messages]);
+  }, [messages, isPending]);
 
   return (
     <div className="flex min-h-dvh justify-center bg-[#F7F4FA]">
@@ -81,6 +91,7 @@ export function ChatView() {
         <div
           ref={listRef}
           className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-4"
+          aria-busy={isPending}
         >
           <div className="flex flex-col gap-3">
             {messages.map((message) => (
@@ -90,10 +101,11 @@ export function ChatView() {
                 content={message.content}
               />
             ))}
+            {isPending ? <ChatMessageSkeleton /> : null}
           </div>
         </div>
 
-        <ChatInput onSend={addMessage} />
+        <ChatInput onSend={addMessage} disabled={isPending} />
       </div>
     </div>
   );
