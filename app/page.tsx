@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ChatPreview } from "@/components/chat/chat-preview";
 import { Navbar } from "@/components/navbar";
+import Link from "next/link";
 
 export default function Home() {
   return (
