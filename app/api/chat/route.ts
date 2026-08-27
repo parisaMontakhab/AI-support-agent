@@ -1,4 +1,5 @@
 import { GEMINI_MODEL, getGeminiClient } from "@/lib/ai/gemini";
+import { CUSTOMER_SUPPORT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
     const interaction = await ai.interactions.create({
       model: GEMINI_MODEL,
       input: message,
+      system_instruction: CUSTOMER_SUPPORT_SYSTEM_PROMPT,
     });
 
     return Response.json({ reply: interaction.output_text ?? "" });
