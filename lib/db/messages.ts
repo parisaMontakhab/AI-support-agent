@@ -19,6 +19,14 @@ async function messagesCollection(): Promise<Collection<MessageRecord>> {
   return db.collection<MessageRecord>("messages");
 }
 
+export async function listMessagesByConversationId(conversationId: ObjectId) {
+  const messages = await messagesCollection();
+  return messages
+    .find({ conversationId })
+    .sort({ createdAt: 1, _id: 1 })
+    .toArray();
+}
+
 export async function saveMessage(input: {
   conversationId: ObjectId;
   role: MessageRole;
