@@ -1,3 +1,4 @@
+import { conversationTitleFromMessage } from "@/lib/chat/conversation-title";
 import { GEMINI_MODEL, getGeminiClient } from "@/lib/ai/gemini";
 import { CUSTOMER_SUPPORT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
 import {
@@ -44,7 +45,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const conversation = await getOrCreateConversation(conversationId || undefined);
+    const conversation = await getOrCreateConversation(
+      conversationId || undefined,
+      conversationTitleFromMessage(message),
+    );
     await saveMessage({
       conversationId: conversation._id,
       role: "user",

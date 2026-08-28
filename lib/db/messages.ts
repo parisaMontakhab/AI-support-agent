@@ -27,6 +27,37 @@ export async function listMessagesByConversationId(conversationId: ObjectId) {
     .toArray();
 }
 
+export async function getFirstUserMessagesByConversationIds(
+  conversationIds: ObjectId[],
+) {
+  if (conversationIds.length === 0) {
+    return new Map<string, string>();
+  }
+
+  const messages = await messagesCollection();
+  const rows = await messages
+    .aggregate<{ _id: ObjectId; content: string }>([
+      {
+        $match: {
+          conversationId: { $in: conversationIds },
+          role: "user",
+        },
+      },
+      { $sort: { createdAt: 1, _id: 1 } },
+      {
+        $group: {
+          _id: "$conversationId",
+          content: { $first: "$content" },
+        },
+      },
+    ])
+    .toArray();
+
+  return new Map(
+    rows.map((row) => [row._id.toHexString(), row.content]),
+  );
+}
+
 export async function saveMessage(input: {
   conversationId: ObjectId;
   role: MessageRole;

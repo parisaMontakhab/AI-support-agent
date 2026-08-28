@@ -1,8 +1,35 @@
 import Link from "next/link";
 
-export function ChatHeader() {
+type ChatHeaderProps = {
+  onOpenHistory?: () => void;
+};
+
+export function ChatHeader({ onOpenHistory }: ChatHeaderProps) {
   return (
     <header className="flex items-center gap-3 border-b border-[#EEE8F4] bg-white px-4 py-3">
+      {onOpenHistory ? (
+        <button
+          type="button"
+          onClick={onOpenHistory}
+          aria-label="Open conversation history"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted hover:bg-lavender hover:text-ink md:hidden"
+        >
+          <svg
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+            className="h-5 w-5"
+          >
+            <path
+              d="M4 6h12M4 10h12M4 14h12"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      ) : null}
+
       <Link
         href="/"
         aria-label="Back to home"
