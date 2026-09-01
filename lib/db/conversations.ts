@@ -108,10 +108,7 @@ export async function getOrCreateConversation(id?: string, title?: string) {
   return createConversation(title || "New chat");
 }
 
-export async function updateConversationInteractionId(
-  conversationId: ObjectId,
-  interactionId: string,
-) {
+export async function touchConversation(conversationId: ObjectId) {
   const now = new Date();
   const conversations = await conversationsCollection();
 
@@ -119,7 +116,6 @@ export async function updateConversationInteractionId(
     { _id: conversationId },
     {
       $set: {
-        interactionId,
         updatedAt: now,
       },
     },

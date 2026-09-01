@@ -36,13 +36,6 @@ function parseRestoredConversation(data: unknown) {
     return null;
   }
 
-  const interactionId =
-    "interactionId" in data &&
-    typeof data.interactionId === "string" &&
-    data.interactionId.trim()
-      ? data.interactionId
-      : null;
-
   const rawMessages = "messages" in data ? data.messages : null;
   if (!Array.isArray(rawMessages)) {
     return null;
@@ -72,7 +65,7 @@ function parseRestoredConversation(data: unknown) {
     messages.push({ id, role, content });
   }
 
-  return { conversationId, interactionId, messages };
+  return { conversationId, messages };
 }
 
 function parseConversationList(data: unknown): ConversationHistoryItem[] {
@@ -136,7 +129,6 @@ export function ChatApp({ initialConversations }: ChatAppProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const isPendingRef = useRef(false);
   const turnRef = useRef(0);
-  const interactionIdRef = useRef<string | null>(null);
 
   if (displayedId !== conversationId) {
     setDisplayedId(conversationId);
@@ -166,7 +158,6 @@ export function ChatApp({ initialConversations }: ChatAppProps) {
   const resetToNewChat = useCallback(() => {
     turnRef.current += 1;
     isPendingRef.current = false;
-    interactionIdRef.current = null;
     setLoadedConversationId(null);
     setIsPending(false);
     setIsRestoring(false);
@@ -206,9 +197,6 @@ export function ChatApp({ initialConversations }: ChatAppProps) {
         },
         body: JSON.stringify({
           message: content,
-          ...(interactionIdRef.current
-            ? { previousInteractionId: interactionIdRef.current }
-            : {}),
           ...(loadedConversationId
             ? { conversationId: loadedConversationId }
             : {}),
@@ -227,15 +215,6 @@ export function ChatApp({ initialConversations }: ChatAppProps) {
           ? data.reply
           : "Sorry, I could not generate a reply.";
 
-      const nextInteractionId =
-        typeof data === "object" &&
-        data !== null &&
-        "interactionId" in data &&
-        typeof data.interactionId === "string" &&
-        data.interactionId.trim()
-          ? data.interactionId
-          : null;
-
       const nextConversationId =
         typeof data === "object" &&
         data !== null &&
@@ -244,10 +223,6 @@ export function ChatApp({ initialConversations }: ChatAppProps) {
         data.conversationId.trim()
           ? data.conversationId
           : null;
-
-      if (nextInteractionId) {
-        interactionIdRef.current = nextInteractionId;
-      }
 
       if (nextConversationId) {
         setLoadedConversationId(nextConversationId);
@@ -313,7 +288,6 @@ export function ChatApp({ initialConversations }: ChatAppProps) {
 
         if (cancelled) return;
 
-        interactionIdRef.current = restored.interactionId;
         setLoadedConversationId(restored.conversationId);
         setMessages(
           restored.messages.length > 0 ? restored.messages : [WELCOME_MESSAGE],

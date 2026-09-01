@@ -1,11 +1,12 @@
-import { conversationTitleFromMessage } from "@/lib/chat/conversation-title";
-import { GEMINI_MODEL, getGeminiClient } from "@/lib/ai/gemini";
+import { buildRecentMessageContext } from "@/lib/ai/context";
+import { generateSupportReply } from "@/lib/ai/gemini";
 import { CUSTOMER_SUPPORT_SYSTEM_PROMPT } from "@/lib/ai/prompts";
+import { conversationTitleFromMessage } from "@/lib/chat/conversation-title";
 import {
   getOrCreateConversation,
-  updateConversationInteractionId,
+  touchConversation,
 } from "@/lib/db/conversations";
-import { saveMessage } from "@/lib/db/messages";
+import { listMessagesByConversationId, saveMessage } from "@/lib/db/messages";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -22,14 +23,6 @@ export async function POST(request: Request) {
     "message" in body &&
     typeof body.message === "string"
       ? body.message.trim()
-      : "";
-
-  const previousInteractionId =
-    typeof body === "object" &&
-    body !== null &&
-    "previousInteractionId" in body &&
-    typeof body.previousInteractionId === "string"
-      ? body.previousInteractionId.trim()
       : "";
 
   const conversationId =
@@ -55,31 +48,22 @@ export async function POST(request: Request) {
       content: message,
     });
 
-    const priorInteractionId =
-      conversation.interactionId || previousInteractionId;
-
-    const ai = getGeminiClient();
-    const interaction = await ai.interactions.create({
-      model: GEMINI_MODEL,
-      input: message,
-      system_instruction: CUSTOMER_SUPPORT_SYSTEM_PROMPT,
-      ...(priorInteractionId
-        ? { previous_interaction_id: priorInteractionId }
-        : {}),
-    });
-
-    const reply = interaction.output_text ?? "";
+    const storedMessages = await listMessagesByConversationId(conversation._id);
+    const recentMessages = buildRecentMessageContext(storedMessages);
+    const reply = await generateSupportReply(
+      recentMessages,
+      CUSTOMER_SUPPORT_SYSTEM_PROMPT,
+    );
 
     await saveMessage({
       conversationId: conversation._id,
       role: "assistant",
       content: reply,
     });
-    await updateConversationInteractionId(conversation._id, interaction.id);
+    await touchConversation(conversation._id);
 
     return Response.json({
       reply,
-      interactionId: interaction.id,
       conversationId: conversation._id.toHexString(),
     });
   } catch (error) {
