@@ -1,31 +1,22 @@
 import "server-only";
 
-import { ObjectId, type Collection } from "mongodb";
+import mongoose from "mongoose";
 import { conversationTitleFromMessage } from "@/lib/chat/conversation-title";
+import { connectMongo } from "@/lib/db/mongoose";
 import { getFirstUserMessagesByConversationIds } from "@/lib/db/messages";
-import { getDb } from "@/lib/db/mongodb";
+import {
+  Conversation,
+  type ConversationRecord,
+} from "@/lib/models/Conversation";
 
-export type ConversationRecord = {
-  _id: ObjectId;
-  title?: string | null;
-  interactionId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
+export type { ConversationRecord };
 
-async function conversationsCollection(): Promise<
-  Collection<ConversationRecord>
-> {
-  const db = await getDb();
-  return db.collection<ConversationRecord>("conversations");
-}
-
-function parseConversationId(value: string): ObjectId | null {
+function parseConversationId(value: string): mongoose.Types.ObjectId | null {
   if (!/^[a-fA-F0-9]{24}$/.test(value)) {
     return null;
   }
 
-  return new ObjectId(value);
+  return new mongoose.Types.ObjectId(value);
 }
 
 export function serializeConversation(conversation: ConversationRecord) {
@@ -39,18 +30,21 @@ export function serializeConversation(conversation: ConversationRecord) {
 }
 
 export async function getConversationById(id: string) {
+  await connectMongo();
   const objectId = parseConversationId(id);
   if (!objectId) {
     return null;
   }
 
-  const conversations = await conversationsCollection();
-  return conversations.findOne({ _id: objectId });
+  return Conversation.findById(objectId).lean<ConversationRecord>().exec();
 }
 
 export async function listConversations() {
-  const conversations = await conversationsCollection();
-  const items = await conversations.find({}).sort({ updatedAt: -1, _id: -1 }).toArray();
+  await connectMongo();
+  const items = await Conversation.find({})
+    .sort({ updatedAt: -1, _id: -1 })
+    .lean<ConversationRecord[]>()
+    .exec();
   const untitled = items.filter((item) => !item.title?.trim());
 
   if (untitled.length === 0) {
@@ -76,25 +70,23 @@ export async function listConversations() {
   }
 
   if (writes.length > 0) {
-    await conversations.bulkWrite(writes);
+    await Conversation.bulkWrite(writes);
   }
 
   return items;
 }
 
 export async function createConversation(title: string) {
+  await connectMongo();
   const now = new Date();
-  const conversation: ConversationRecord = {
-    _id: new ObjectId(),
+  const created = await Conversation.create({
     title,
     interactionId: null,
     createdAt: now,
     updatedAt: now,
-  };
+  });
 
-  const conversations = await conversationsCollection();
-  await conversations.insertOne(conversation);
-  return conversation;
+  return created.toObject();
 }
 
 export async function getOrCreateConversation(id?: string, title?: string) {
@@ -108,11 +100,13 @@ export async function getOrCreateConversation(id?: string, title?: string) {
   return createConversation(title || "New chat");
 }
 
-export async function touchConversation(conversationId: ObjectId) {
+export async function touchConversation(
+  conversationId: mongoose.Types.ObjectId,
+) {
+  await connectMongo();
   const now = new Date();
-  const conversations = await conversationsCollection();
 
-  await conversations.updateOne(
+  await Conversation.updateOne(
     { _id: conversationId },
     {
       $set: {

@@ -1,4 +1,4 @@
-import { pingMongo } from "@/lib/db/mongodb";
+import { pingMongo } from "@/lib/db/mongoose";
 
 export async function GET() {
   try {
